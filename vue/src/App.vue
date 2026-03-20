@@ -231,6 +231,15 @@
                               @click="openUrl('https://ratingposterdb.com/')">?
                     </v-button>
                   </div>
+                  <div class="mt-3">
+                    <v-input
+                        type="text"
+                        class="h-[46px]"
+                        placeholder="RPDB base URL (optional)"
+                        v-model="state.rpdbApiUrl"
+                    />
+                  </div>
+                  <p class="mt-2 text-xs text-gray-500">Leave empty to use the default RatingPosterDB URL.</p>
                 </div>
 
                 <!-- Install Button -->
@@ -287,6 +296,8 @@ import {onMounted, reactive} from 'vue';
 import regionsToCountries from './regions-to-countries.json'
 import VButton from "./components/VButton.vue";
 import VInput from "./components/VInput.vue";
+
+const DEFAULT_RPDB_API_URL = 'https://api.ratingposterdb.com';
 
 const regions = {
   'United States': [
@@ -605,6 +616,7 @@ function getNetflixTop10CountryCode() {
 const state = reactive({
   country: getCountry(),
   rpdbKey: '',
+  rpdbApiUrl: '',
   providers: [
     'nfx',
     'dnp',
@@ -642,8 +654,18 @@ function decodeUrlConfig() {
 
   try {
     const configString = atob(decodeURIComponent(urlParts.pop())).split(':');
-    const [providers, rpdbKey, countryCode, timeStamp, netflixTop10Global, netflixTop10Country, netflixTop10CountryCode] = configString;
+    const [
+      providers,
+      rpdbKey,
+      countryCode,
+      timeStamp,
+      netflixTop10Global,
+      netflixTop10Country,
+      netflixTop10CountryCode,
+      rpdbApiUrlEncoded,
+    ] = configString;
     state.rpdbKey = rpdbKey || '';
+    state.rpdbApiUrl = decodeConfigValue(rpdbApiUrlEncoded);
     state.providers = providers ? providers.split(',') : [];
     state.countryCode = countryCode || null;
     state.timeStamp = timeStamp || null;
@@ -668,15 +690,16 @@ function installAddon() {
     return;
   }
 
-  // Build configuration string: providers:rpdbKey:countryCode:timestamp:netflixTop10Global:netflixTop10Country:netflixTop10CountryCode
+  // Build configuration string: providers:rpdbKey:countryCode:timestamp:netflixTop10Global:netflixTop10Country:netflixTop10CountryCode:rpdbApiUrlBase64
   const configParts = [
     state.providers.join(','),
     state.rpdbKey,
     state.countryCode || getCountryCodeFromCountry(state.country),
     state.timeStamp || Number(new Date()),
-    state.netflixTop10Global || '0',
-    state.netflixTop10Country || '0',
-    state.netflixTop10CountryCode || ''
+    toConfigFlag(state.netflixTop10Global),
+    toConfigFlag(state.netflixTop10Country),
+    state.netflixTop10CountryCode || '',
+    encodeConfigValue(state.rpdbApiUrl)
   ];
 
   const base64 = btoa(configParts.join(':'));
@@ -708,6 +731,37 @@ function copyUrl() {
     console.error('Failed to copy URL:', err);
     alert('Failed to copy URL. Please copy manually.');
   });
+}
+
+function toConfigFlag(value) {
+  return value ? '1' : '0';
+}
+
+function encodeConfigValue(value) {
+  const trimmedValue = normalizeRpdbApiUrl(value);
+
+  if (!trimmedValue || trimmedValue === DEFAULT_RPDB_API_URL) {
+    return '';
+  }
+
+  return btoa(trimmedValue);
+}
+
+function decodeConfigValue(value) {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    return atob(value).trim();
+  } catch (error) {
+    console.error('Failed to decode config value:', error);
+    return '';
+  }
+}
+
+function normalizeRpdbApiUrl(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
 }
 </script>
 

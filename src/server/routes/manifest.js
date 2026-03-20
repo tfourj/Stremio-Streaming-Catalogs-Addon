@@ -1,3 +1,5 @@
+import { parseAddonConfiguration } from '../../lib/stremio.js';
+
 /**
  * Manifest route handlers
  */
@@ -120,9 +122,15 @@ export function handleConfiguredManifest(req, res, mixpanel) {
   res.setHeader('content-type', 'application/json');
 
   // Parse config
-  const buffer = Buffer(req.params?.configuration || '', 'base64');
-  const configParts = buffer.toString('ascii')?.split(':');
-  const [selectedProviders, rpdbKey, countryCode, installedAt, netflixTop10Global, netflixTop10Country, netflixTop10CountryCode] = configParts;
+  const {
+    selectedProviders,
+    rpdbKey,
+    countryCode,
+    installedAt,
+    netflixTop10Global,
+    netflixTop10Country,
+    netflixTop10CountryCode,
+  } = parseAddonConfiguration(req.params?.configuration);
 
   mixpanel && mixpanel.track('install', {
     ip: req.ip,

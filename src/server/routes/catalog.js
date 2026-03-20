@@ -1,5 +1,5 @@
 import { getNetflixTop10Catalog, getNetflixTop10Global } from '../../services/netflix/resolver.js';
-import { replaceRpdbPosters } from '../../lib/stremio.js';
+import { parseAddonConfiguration, replaceRpdbPosters } from '../../lib/stremio.js';
 
 /**
  * Catalog route handler
@@ -9,14 +9,13 @@ export function handleCatalog(req, res, movies, series, mixpanel) {
   res.setHeader('content-type', 'application/json');
 
   // Parse config
-  const buffer = Buffer(req.params?.configuration || '', 'base64');
-  let [selectedProviders, rpdbKey, countryCode, installedAt] = buffer.toString('ascii')?.split(':');
-
-  // Handle legacy RPDB key format
-  if (String(rpdbKey || '').startsWith('16')) {
-    installedAt = rpdbKey;
-    rpdbKey = null;
-  }
+  const {
+    selectedProviders,
+    rpdbKey,
+    countryCode,
+    installedAt,
+    rpdbApiUrl,
+  } = parseAddonConfiguration(req.params?.configuration);
 
   mixpanel && mixpanel.track('catalog', {
     ip: req.ip,
@@ -63,7 +62,7 @@ export function handleCatalog(req, res, movies, series, mixpanel) {
           metas = await getNetflixTop10Catalog(countryCode, type);
         }
         console.log(`Returning ${metas.length} metas for ${id}`);
-        res.send({ metas: replaceRpdbPosters(rpdbKey, metas) });
+        res.send({ metas: replaceRpdbPosters(rpdbKey, metas, rpdbApiUrl) });
       } catch (error) {
         console.error(`Error fetching Netflix Top 10 catalog ${id}:`, error.message);
         if (error.stack) {
@@ -88,12 +87,12 @@ export function handleCatalog(req, res, movies, series, mixpanel) {
 
   // Handle regular provider catalogs
   if (req.params.type === 'movie') {
-    res.send({ metas: replaceRpdbPosters(rpdbKey, movies[id] || []) });
+    res.send({ metas: replaceRpdbPosters(rpdbKey, movies[id] || [], rpdbApiUrl) });
     return;
   }
 
   if (req.params.type === 'series') {
-    res.send({ metas: replaceRpdbPosters(rpdbKey, series[id] || []) });
+    res.send({ metas: replaceRpdbPosters(rpdbKey, series[id] || [], rpdbApiUrl) });
     return;
   }
 }
