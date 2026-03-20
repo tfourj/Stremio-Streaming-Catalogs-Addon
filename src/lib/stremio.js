@@ -1,5 +1,6 @@
 const DEFAULT_RPDB_API_URL = 'https://api.ratingposterdb.com';
 const DEFAULT_OPENPOSTERDB_API_URL = 'https://openposterdb.com';
+const DEFAULT_OPENPOSTERDB_API_KEY = 't0-free-rpdb';
 
 function decodeConfigValue(value) {
   if (!value) {
@@ -32,16 +33,14 @@ function normalizeUrl(value, fallbackValue) {
   return (url || fallbackValue).replace(/\/+$/, '');
 }
 
-function normalizeOpenPosterSuffixes(value) {
-  const suffixes = String(value || '').trim();
+function normalizeOpenPosterArguments(value) {
+  const argumentsValue = String(value || '').trim();
 
-  if (!suffixes) {
+  if (!argumentsValue) {
     return '';
   }
 
-  return suffixes.startsWith('@') || suffixes.startsWith('.')
-    ? suffixes
-    : `.${suffixes}`;
+  return argumentsValue;
 }
 
 function getPosterSourceConfig(rpdbApiUrl, posterSettings) {
@@ -54,8 +53,11 @@ function getPosterSourceConfig(rpdbApiUrl, posterSettings) {
       posterSettings?.openPosterDbUrl,
       DEFAULT_OPENPOSTERDB_API_URL
     ),
-    openPosterDbSuffixes: normalizeOpenPosterSuffixes(
-      posterSettings?.openPosterDbSuffixes
+    openPosterDbApiKey: String(
+      posterSettings?.openPosterDbApiKey || DEFAULT_OPENPOSTERDB_API_KEY
+    ).trim() || DEFAULT_OPENPOSTERDB_API_KEY,
+    openPosterDbArguments: normalizeOpenPosterArguments(
+      posterSettings?.openPosterDbArguments || posterSettings?.openPosterDbSuffixes
     ),
   };
 }
@@ -68,8 +70,8 @@ function buildRpdbPosterUrl(metaId, rpdbKey, rpdbApiUrl) {
   return `${normalizeUrl(rpdbApiUrl, DEFAULT_RPDB_API_URL)}/${rpdbKey}/imdb/poster-default/${metaId}.jpg`;
 }
 
-function buildOpenPosterDbPosterUrl(metaId, openPosterDbUrl, openPosterDbSuffixes) {
-  return `${normalizeUrl(openPosterDbUrl, DEFAULT_OPENPOSTERDB_API_URL)}/imdb/${metaId}${normalizeOpenPosterSuffixes(openPosterDbSuffixes)}`;
+function buildOpenPosterDbPosterUrl(metaId, openPosterDbUrl, openPosterDbApiKey, openPosterDbArguments) {
+  return `${normalizeUrl(openPosterDbUrl, DEFAULT_OPENPOSTERDB_API_URL)}/${String(openPosterDbApiKey || DEFAULT_OPENPOSTERDB_API_KEY).trim() || DEFAULT_OPENPOSTERDB_API_KEY}/imdb/poster-default/${metaId}${normalizeOpenPosterArguments(openPosterDbArguments)}`;
 }
 
 export function parseAddonConfiguration(configuration) {
@@ -128,7 +130,8 @@ export function replacePosterUrls(configuration, metas) {
       posterUrl = buildOpenPosterDbPosterUrl(
         meta.id,
         posterSourceConfig.openPosterDbUrl,
-        posterSourceConfig.openPosterDbSuffixes
+        posterSourceConfig.openPosterDbApiKey,
+        posterSourceConfig.openPosterDbArguments
       );
     } else {
       posterUrl = buildRpdbPosterUrl(meta.id, rpdbKey, posterSourceConfig.rpdbApiUrl);

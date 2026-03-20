@@ -253,18 +253,31 @@
                   </div>
 
                   <div v-if="state.posterSource === 'openposterdb'" class="mt-3 space-y-3">
+                    <v-input
+                        type="text"
+                        class="h-[46px]"
+                        placeholder="OpenPosterDB URL (optional)"
+                        v-model="state.openPosterDbUrl"
+                    />
+                    <v-input
+                        type="text"
+                        class="h-[46px]"
+                        placeholder="OpenPosterDB API key (optional)"
+                        v-model="state.openPosterDbApiKey"
+                    />
                     <div class="flex">
                       <v-input
                           type="text"
                           class="rounded-r-none h-[46px]"
-                          placeholder="OpenPosterDB suffixes (optional)"
-                          v-model="state.openPosterDbSuffixes"
+                          placeholder="OpenPosterDB arguments (optional)"
+                          v-model="state.openPosterDbArguments"
                       />
                       <v-button type="button" class="w-auto rounded-l-none border-l-0 h-[46px]"
                                 @click="openUrl(getPosterSourceHelpUrl())">?
                       </v-button>
                     </div>
-                    <p class="text-xs text-gray-500">Poster URL format: `imdb/&lt;id&gt;{suffixes}`. Example: `@mil.pbc.sh.lt.bm.zl`</p>
+                    <p class="text-xs text-gray-500">Leave URL/API empty to use `https://openposterdb.com/` and `t0-free-rpdb`.</p>
+                    <p class="text-xs text-gray-500">Poster URL format: `/{api}/imdb/&lt;id&gt;{suffixes}`. Example: `@mil.pbc.sh.lt.bm.zl`</p>
                   </div>
                 </div>
 
@@ -325,6 +338,7 @@ import VInput from "./components/VInput.vue";
 
 const DEFAULT_RPDB_API_URL = 'https://api.ratingposterdb.com';
 const DEFAULT_OPENPOSTERDB_API_URL = 'https://openposterdb.com';
+const DEFAULT_OPENPOSTERDB_API_KEY = 't0-free-rpdb';
 
 const regions = {
   'United States': [
@@ -645,7 +659,9 @@ const state = reactive({
   posterSource: 'rpdb',
   rpdbKey: '',
   rpdbApiUrl: '',
-  openPosterDbSuffixes: '',
+  openPosterDbUrl: '',
+  openPosterDbApiKey: '',
+  openPosterDbArguments: '',
   providers: [
     'nfx',
     'dnp',
@@ -698,7 +714,9 @@ function decodeUrlConfig() {
     state.rpdbKey = rpdbKey || '';
     state.rpdbApiUrl = decodeConfigValue(rpdbApiUrlEncoded);
     state.posterSource = getPosterSource(posterSettings, state.rpdbApiUrl);
-    state.openPosterDbSuffixes = posterSettings?.openPosterDbSuffixes || '';
+    state.openPosterDbUrl = posterSettings?.openPosterDbUrl || '';
+    state.openPosterDbApiKey = posterSettings?.openPosterDbApiKey || '';
+    state.openPosterDbArguments = posterSettings?.openPosterDbArguments || posterSettings?.openPosterDbSuffixes || '';
     state.providers = providers ? providers.split(',') : [];
     state.countryCode = countryCode || null;
     state.timeStamp = timeStamp || null;
@@ -796,8 +814,23 @@ function encodePosterSettings() {
     posterSettings.source = state.posterSource;
   }
 
-  if (state.posterSource === 'openposterdb' && state.openPosterDbSuffixes) {
-    posterSettings.openPosterDbSuffixes = normalizeOpenPosterSuffixes(state.openPosterDbSuffixes);
+  if (state.posterSource === 'openposterdb' && state.openPosterDbArguments) {
+    const openPosterDbArguments = normalizeOpenPosterSuffixes(state.openPosterDbArguments);
+    posterSettings.openPosterDbArguments = openPosterDbArguments;
+    posterSettings.openPosterDbSuffixes = openPosterDbArguments;
+  }
+
+  if (state.posterSource === 'openposterdb') {
+    const openPosterDbUrl = normalizeOpenPosterDbUrl(state.openPosterDbUrl);
+    const openPosterDbApiKey = normalizeOpenPosterDbApiKey(state.openPosterDbApiKey);
+
+    if (openPosterDbUrl !== DEFAULT_OPENPOSTERDB_API_URL) {
+      posterSettings.openPosterDbUrl = openPosterDbUrl;
+    }
+
+    if (openPosterDbApiKey !== DEFAULT_OPENPOSTERDB_API_KEY) {
+      posterSettings.openPosterDbApiKey = openPosterDbApiKey;
+    }
   }
 
   const encodedValue = JSON.stringify(posterSettings);
@@ -851,6 +884,14 @@ function normalizeOpenPosterSuffixes(value) {
   return suffixes.startsWith('@') || suffixes.startsWith('.')
     ? suffixes
     : `.${suffixes}`;
+}
+
+function normalizeOpenPosterDbUrl(value) {
+  return String(value || '').trim().replace(/\/+$/, '') || DEFAULT_OPENPOSTERDB_API_URL;
+}
+
+function normalizeOpenPosterDbApiKey(value) {
+  return String(value || '').trim() || DEFAULT_OPENPOSTERDB_API_KEY;
 }
 
 function getPosterSource(posterSettings, rpdbApiUrl) {
