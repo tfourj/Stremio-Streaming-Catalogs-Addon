@@ -283,7 +283,20 @@
 
                 <!-- Install Button -->
                 <div class="pt-1">
-                  <v-button type="submit" variation="primary">Install addon</v-button>
+                  <div class="flex">
+                    <v-button type="submit" variation="primary" class="rounded-r-none">Install addon</v-button>
+                    <button
+                        type="button"
+                        class="flex items-center justify-center bg-purple-900 hover:bg-purple-800 text-gray-100 px-4 rounded-r-lg border-l border-purple-800 transition ease-in duration-500"
+                        @click="showInstallUrl"
+                        aria-label="Show manual install URL"
+                        title="Show manual install URL"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7 10l5 5 5-5z"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div v-if="state.addonUrl" class="mt-4">
@@ -331,7 +344,7 @@
 </template>
 
 <script setup>
-import {onMounted, reactive} from 'vue';
+import {onMounted, reactive, watch} from 'vue';
 import regionsToCountries from './regions-to-countries.json'
 import VButton from "./components/VButton.vue";
 import VInput from "./components/VInput.vue";
@@ -690,6 +703,10 @@ onMounted(() => {
   decodeUrlConfig();
 })
 
+watch(getConfigurationSignature, () => {
+  state.addonUrl = '';
+});
+
 function decodeUrlConfig() {
   const urlParts = document.location.href.split('/');
   const configure = urlParts.pop();
@@ -730,6 +747,14 @@ function decodeUrlConfig() {
 }
 
 function installAddon() {
+  prepareAddonUrl(true);
+}
+
+function showInstallUrl() {
+  prepareAddonUrl(false);
+}
+
+function prepareAddonUrl(openInStremio) {
   if (!state.providers.length && !state.netflixTop10Global && !state.netflixTop10Country) {
     alert('Please choose at least 1 provider or enable Netflix Top 10');
 
@@ -760,7 +785,28 @@ function installAddon() {
   console.log('URL:', state.addonUrl);
   navigator.clipboard.writeText(state.addonUrl).catch(console.error);
 
-  window.location.href = getStremioInstallUrl(state.addonUrl);
+  if (openInStremio) {
+    window.location.href = getStremioInstallUrl(state.addonUrl);
+  }
+}
+
+function getConfigurationSignature() {
+  return JSON.stringify({
+    country: state.country,
+    posterSource: state.posterSource,
+    rpdbKey: state.rpdbKey,
+    rpdbApiUrl: state.rpdbApiUrl,
+    openPosterDbUrl: state.openPosterDbUrl,
+    openPosterDbApiKey: state.openPosterDbApiKey,
+    openPosterDbArguments: state.openPosterDbArguments,
+    providers: [...state.providers],
+    enableNetflixTop10: state.enableNetflixTop10,
+    netflixTop10Global: state.netflixTop10Global,
+    netflixTop10Country: state.netflixTop10Country,
+    netflixTop10CountryCode: state.netflixTop10CountryCode,
+    countryCode: state.countryCode,
+    timeStamp: state.timeStamp,
+  });
 }
 
 function toggle(provider) {
