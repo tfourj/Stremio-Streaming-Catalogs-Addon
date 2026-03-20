@@ -29,6 +29,17 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 app.set('trust proxy', true);
 app.use(cors());
+
+app.get('/runtime-config.js', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('content-type', 'application/javascript');
+  res.send(
+    `window.__APP_CONFIG__ = ${JSON.stringify({
+      VITE_APP_URL: process.env.VITE_APP_URL || '',
+    })};`
+  );
+});
+
 app.use(express.static(path.join(__dirname, '../../vue/dist')));
 
 // Initialize Mixpanel

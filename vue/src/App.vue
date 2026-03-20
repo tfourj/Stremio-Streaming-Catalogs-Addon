@@ -955,7 +955,7 @@ function getPosterSourceHelpUrl() {
 }
 
 function getAddonBaseUrl() {
-  const configuredBaseUrl = String(import.meta.env.VITE_APP_URL || '').trim().replace(/\/+$/, '');
+  const configuredBaseUrl = String(window.__APP_CONFIG__?.VITE_APP_URL || '').trim().replace(/\/+$/, '');
   const currentOrigin = String(window.location.origin || '').trim().replace(/\/+$/, '');
   const currentHostname = String(window.location.hostname || '').toLowerCase();
 

@@ -8,6 +8,7 @@ services:
       - "7700:7700"
     environment:
       - NODE_ENV=production
+      - VITE_APP_URL=${VITE_APP_URL:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/manifest.json"]
