@@ -1,5 +1,5 @@
 import { getNetflixTop10Catalog, getNetflixTop10Global } from '../../services/netflix/resolver.js';
-import { parseAddonConfiguration, replaceRpdbPosters } from '../../lib/stremio.js';
+import { parseAddonConfiguration, replacePosterUrls } from '../../lib/stremio.js';
 
 /**
  * Catalog route handler
@@ -9,13 +9,13 @@ export function handleCatalog(req, res, movies, series, mixpanel) {
   res.setHeader('content-type', 'application/json');
 
   // Parse config
+  const configuration = parseAddonConfiguration(req.params?.configuration);
   const {
     selectedProviders,
     rpdbKey,
     countryCode,
     installedAt,
-    rpdbApiUrl,
-  } = parseAddonConfiguration(req.params?.configuration);
+  } = configuration;
 
   mixpanel && mixpanel.track('catalog', {
     ip: req.ip,
@@ -62,7 +62,7 @@ export function handleCatalog(req, res, movies, series, mixpanel) {
           metas = await getNetflixTop10Catalog(countryCode, type);
         }
         console.log(`Returning ${metas.length} metas for ${id}`);
-        res.send({ metas: replaceRpdbPosters(rpdbKey, metas, rpdbApiUrl) });
+        res.send({ metas: replacePosterUrls(configuration, metas) });
       } catch (error) {
         console.error(`Error fetching Netflix Top 10 catalog ${id}:`, error.message);
         if (error.stack) {
@@ -87,12 +87,12 @@ export function handleCatalog(req, res, movies, series, mixpanel) {
 
   // Handle regular provider catalogs
   if (req.params.type === 'movie') {
-    res.send({ metas: replaceRpdbPosters(rpdbKey, movies[id] || [], rpdbApiUrl) });
+    res.send({ metas: replacePosterUrls(configuration, movies[id] || []) });
     return;
   }
 
   if (req.params.type === 'series') {
-    res.send({ metas: replaceRpdbPosters(rpdbKey, series[id] || [], rpdbApiUrl) });
+    res.send({ metas: replacePosterUrls(configuration, series[id] || []) });
     return;
   }
 }

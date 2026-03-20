@@ -222,24 +222,50 @@
                   </div>
                 </div>
 
-                <!-- RPDB Key Section -->
+                <!-- Poster Source Section -->
                 <div>
-                  <div class="flex">
+                  <p class="text-gray-500 mb-2 text-sm">Poster source:</p>
+                  <select
+                      v-model="state.posterSource"
+                      class="w-full text-gray-200 text-sm px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg focus:outline-none focus:border-purple-400"
+                  >
+                    <option value="rpdb">RPDB (default)</option>
+                    <option value="openposterdb">OpenPosterDB</option>
+                    <option value="custom">Custom RPDB URL</option>
+                  </select>
+
+                  <div v-if="state.posterSource !== 'openposterdb'" class="flex mt-3">
                     <v-input type="text" class="rounded-r-none h-[46px]" placeholder="RPDB key (optional)"
                              pattern="t[0-3]-[a-zA-Z0-9\-]+" v-model="state.rpdbKey"/>
                     <v-button type="button" class="w-auto rounded-l-none border-l-0 h-[46px]"
-                              @click="openUrl('https://ratingposterdb.com/')">?
+                              @click="openUrl(getPosterSourceHelpUrl())">?
                     </v-button>
                   </div>
-                  <div class="mt-3">
+
+                  <div v-if="state.posterSource === 'custom'" class="mt-3">
                     <v-input
                         type="text"
                         class="h-[46px]"
                         placeholder="RPDB base URL (optional)"
                         v-model="state.rpdbApiUrl"
                     />
+                    <p class="mt-2 text-xs text-gray-500">Leave empty to use the default RatingPosterDB URL.</p>
                   </div>
-                  <p class="mt-2 text-xs text-gray-500">Leave empty to use the default RatingPosterDB URL.</p>
+
+                  <div v-if="state.posterSource === 'openposterdb'" class="mt-3 space-y-3">
+                    <div class="flex">
+                      <v-input
+                          type="text"
+                          class="rounded-r-none h-[46px]"
+                          placeholder="OpenPosterDB suffixes (optional)"
+                          v-model="state.openPosterDbSuffixes"
+                      />
+                      <v-button type="button" class="w-auto rounded-l-none border-l-0 h-[46px]"
+                                @click="openUrl(getPosterSourceHelpUrl())">?
+                      </v-button>
+                    </div>
+                    <p class="text-xs text-gray-500">Poster URL format: `imdb/&lt;id&gt;{suffixes}`. Example: `@mil.pbc.sh.lt.bm.zl`</p>
+                  </div>
                 </div>
 
                 <!-- Install Button -->
@@ -298,6 +324,7 @@ import VButton from "./components/VButton.vue";
 import VInput from "./components/VInput.vue";
 
 const DEFAULT_RPDB_API_URL = 'https://api.ratingposterdb.com';
+const DEFAULT_OPENPOSTERDB_API_URL = 'https://openposterdb.com';
 
 const regions = {
   'United States': [
@@ -615,8 +642,10 @@ function getNetflixTop10CountryCode() {
 
 const state = reactive({
   country: getCountry(),
+  posterSource: 'rpdb',
   rpdbKey: '',
   rpdbApiUrl: '',
+  openPosterDbSuffixes: '',
   providers: [
     'nfx',
     'dnp',
@@ -663,9 +692,13 @@ function decodeUrlConfig() {
       netflixTop10Country,
       netflixTop10CountryCode,
       rpdbApiUrlEncoded,
+      posterSettingsEncoded,
     ] = configString;
+    const posterSettings = decodeConfigJson(posterSettingsEncoded);
     state.rpdbKey = rpdbKey || '';
     state.rpdbApiUrl = decodeConfigValue(rpdbApiUrlEncoded);
+    state.posterSource = getPosterSource(posterSettings, state.rpdbApiUrl);
+    state.openPosterDbSuffixes = posterSettings?.openPosterDbSuffixes || '';
     state.providers = providers ? providers.split(',') : [];
     state.countryCode = countryCode || null;
     state.timeStamp = timeStamp || null;
@@ -699,7 +732,8 @@ function installAddon() {
     toConfigFlag(state.netflixTop10Global),
     toConfigFlag(state.netflixTop10Country),
     state.netflixTop10CountryCode || '',
-    encodeConfigValue(state.rpdbApiUrl)
+    encodeRpdbApiUrl(state.posterSource, state.rpdbApiUrl),
+    encodePosterSettings()
   ];
 
   const base64 = btoa(configParts.join(':'));
@@ -747,6 +781,34 @@ function encodeConfigValue(value) {
   return btoa(trimmedValue);
 }
 
+function encodeRpdbApiUrl(posterSource, value) {
+  if (posterSource !== 'custom') {
+    return '';
+  }
+
+  return encodeConfigValue(value);
+}
+
+function encodePosterSettings() {
+  const posterSettings = {};
+
+  if (state.posterSource !== 'rpdb') {
+    posterSettings.source = state.posterSource;
+  }
+
+  if (state.posterSource === 'openposterdb' && state.openPosterDbSuffixes) {
+    posterSettings.openPosterDbSuffixes = normalizeOpenPosterSuffixes(state.openPosterDbSuffixes);
+  }
+
+  const encodedValue = JSON.stringify(posterSettings);
+
+  if (encodedValue === '{}') {
+    return '';
+  }
+
+  return btoa(encodedValue);
+}
+
 function decodeConfigValue(value) {
   if (!value) {
     return '';
@@ -760,8 +822,49 @@ function decodeConfigValue(value) {
   }
 }
 
+function decodeConfigJson(value) {
+  const decodedValue = decodeConfigValue(value);
+
+  if (!decodedValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(decodedValue);
+  } catch (error) {
+    console.error('Failed to decode config JSON:', error);
+    return null;
+  }
+}
+
 function normalizeRpdbApiUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function normalizeOpenPosterSuffixes(value) {
+  const suffixes = String(value || '').trim();
+
+  if (!suffixes) {
+    return '';
+  }
+
+  return suffixes.startsWith('@') || suffixes.startsWith('.')
+    ? suffixes
+    : `.${suffixes}`;
+}
+
+function getPosterSource(posterSettings, rpdbApiUrl) {
+  if (posterSettings?.source) {
+    return posterSettings.source;
+  }
+
+  return rpdbApiUrl ? 'custom' : 'rpdb';
+}
+
+function getPosterSourceHelpUrl() {
+  return state.posterSource === 'openposterdb'
+    ? DEFAULT_OPENPOSTERDB_API_URL
+    : 'https://ratingposterdb.com/';
 }
 
 function getAddonBaseUrl() {
