@@ -1,5 +1,6 @@
 services:
   stremio-addon:
+    image: ${IMAGE_NAME:-stremio-streaming-catalogs-addon:local}
     build:
       context: .
       dockerfile: Dockerfile.local
