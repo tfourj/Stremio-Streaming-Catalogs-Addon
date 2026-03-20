@@ -703,12 +703,12 @@ function installAddon() {
   ];
 
   const base64 = btoa(configParts.join(':'));
-  state.addonUrl = `${import.meta.env.VITE_APP_URL}/${encodeURIComponent(base64)}/manifest.json`;
+  state.addonUrl = `${getAddonBaseUrl()}/${encodeURIComponent(base64)}/manifest.json`;
 
   console.log('URL:', state.addonUrl);
   navigator.clipboard.writeText(state.addonUrl).catch(console.error);
 
-  window.location.href = state.addonUrl.replace(/https?:\/\//, 'stremio://');
+  window.location.href = getStremioInstallUrl(state.addonUrl);
 }
 
 function toggle(provider) {
@@ -762,6 +762,30 @@ function decodeConfigValue(value) {
 
 function normalizeRpdbApiUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function getAddonBaseUrl() {
+  const configuredBaseUrl = String(import.meta.env.VITE_APP_URL || '').trim().replace(/\/+$/, '');
+  const currentOrigin = String(window.location.origin || '').trim().replace(/\/+$/, '');
+  const currentHostname = String(window.location.hostname || '').toLowerCase();
+
+  if (currentHostname === 'localhost' || currentHostname === '127.0.0.1') {
+    return currentOrigin.replace('localhost', '127.0.0.1');
+  }
+
+  return configuredBaseUrl || currentOrigin;
+}
+
+function getStremioInstallUrl(addonUrl) {
+  const url = new URL(addonUrl);
+
+  if (url.hostname === 'localhost') {
+    url.hostname = '127.0.0.1';
+  }
+
+  return addonUrl.startsWith('http://')
+    ? addonUrl.replace(/^http:\/\//, 'stremio://').replace(/^stremio:\/\/localhost/, 'stremio://127.0.0.1')
+    : url.toString().replace(/^https:\/\//, 'stremio://');
 }
 </script>
 
