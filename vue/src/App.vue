@@ -9,6 +9,7 @@
           <h1 class="my-3 font-semibold text-4xl">Streaming Catalogs</h1>
           <p class="pr-3 text-sm opacity-75">Select all your favourite streaming services to add their
             catalogs to Stremio!</p>
+          <p class="pr-3 text-xs opacity-60 mt-2">Modified version by tfourj.</p>
           <v-button class="mt-8 py-2" @click="openUrl('https://ko-fi.com/rab1t')">
             <img class="w-8 mr-2" src="https://storage.ko-fi.com/cdn/brandasset/kofi_s_logo_nolabel.png"/>
             <span>Support me on Ko-fi</span>
@@ -358,7 +359,7 @@
             </div>
           </div>
           <div class="mt-4 text-center text-gray-400 text-xs">
-            <a href="https://github.com/rleroi/Stremio-Streaming-Catalogs-Addon" rel="noopener" target="_blank"
+            <a href="https://github.com/tfourj/Stremio-Streaming-Catalogs-Addon" rel="noopener" target="_blank"
                title="Contribute on GitHub" class="mr-2 fill-gray-400 hover:fill-gray-500 ">
               <svg class="inline-block" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                    viewBox="0 0 24 24">

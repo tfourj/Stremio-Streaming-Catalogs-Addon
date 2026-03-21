@@ -1,5 +1,7 @@
 # Stremio Streaming Catalogs Addon
 
+Modified version by [tfourj](https://github.com/tfourj). Upstream: [rleroi/Stremio-Streaming-Catalogs-Addon](https://github.com/rleroi/Stremio-Streaming-Catalogs-Addon).
+
 ![image](https://user-images.githubusercontent.com/6817390/216839228-f0d09dfd-e76b-4d23-bf4f-cab09febd1ef.png)
 
 A Stremio addon that provides streaming catalogs from various popular streaming services including Netflix, Disney+, HBO Max, Prime Video, Apple TV+, and many more. This addon allows users to browse and discover content from multiple streaming platforms directly within Stremio.
@@ -41,7 +43,7 @@ A Stremio addon that provides streaming catalogs from various popular streaming 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/rleroi/Stremio-Streaming-Catalogs-Addon.git
+   git clone https://github.com/tfourj/Stremio-Streaming-Catalogs-Addon.git
    cd Stremio-Streaming-Catalogs-Addon
    ```
 
