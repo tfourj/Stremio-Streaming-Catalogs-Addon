@@ -269,15 +269,50 @@
                       <v-input
                           type="text"
                           class="rounded-r-none h-[46px]"
-                          placeholder="OpenPosterDB arguments (optional)"
+                          placeholder="Arguments (optional) — e.g. .jpg?lang=de&imageSize=large&ratings_order=imdb,tmdb,rt"
                           v-model="state.openPosterDbArguments"
                       />
-                      <v-button type="button" class="w-auto rounded-l-none border-l-0 h-[46px]"
-                                @click="openUrl(getPosterSourceHelpUrl())">?
+                      <v-button
+                          type="button"
+                          class="w-auto rounded-l-none border-l-0 h-[46px]"
+                          aria-label="OpenPosterDB README on GitHub"
+                          title="OpenPosterDB README (GitHub)"
+                          @click="openUrl(OPENPOSTERDB_README_URL)"
+                      >?
                       </v-button>
                     </div>
-                    <p class="text-xs text-gray-500">Leave URL/API empty to use `https://openposterdb.com/` and `t0-free-rpdb`.</p>
-                    <p class="text-xs text-gray-500">Poster URL format: `/{api}/imdb/&lt;id&gt;{suffixes}`. Example: `@mil.pbc.sh.lt.bm.zl`</p>
+                    <p class="text-xs text-gray-500">
+                      Leave URL and API key empty for <code class="text-gray-400">https://openposterdb.com</code> and
+                      <code class="text-gray-400">t0-free-rpdb</code>.
+                      Appends to <code class="text-gray-400">/{api_key}/imdb/poster-default/{imdb_id}</code> (e.g.
+                      <code class="text-gray-400">.jpg?…</code> or <code class="text-gray-400">?…</code>).
+                    </p>
+                    <details class="text-xs text-gray-500">
+                      <summary class="cursor-pointer text-gray-400 hover:text-gray-300 select-none">Common OpenPosterDB parameters (examples)</summary>
+                      <div class="mt-2 space-y-2 pl-1 border-l border-gray-700 max-h-48 overflow-y-auto">
+                        <p><span class="text-gray-400">Path:</span> <code class="text-gray-400">{id_type}</code> is fixed to
+                          <code class="text-gray-400">imdb</code> here; OpenPosterDB also supports
+                          <code class="text-gray-400">tmdb</code>, <code class="text-gray-400">tvdb</code>.
+                          <code class="text-gray-400">{id_value}</code> e.g. <code class="text-gray-400">tt1234567</code>,
+                          <code class="text-gray-400">movie-123</code>, <code class="text-gray-400">series-456</code>.</p>
+                        <p><code class="text-gray-400">?fallback=true</code> — RPDB compatibility; ignored (OPDB falls back to TMDB by default).</p>
+                        <p class="font-mono text-[11px] leading-relaxed text-gray-400 break-all">
+                          ?lang=de<br>
+                          ?imageSize=medium|large|very-large (sizes vary by image type; see README)<br>
+                          ?ratings_limit=0-8<br>
+                          ?ratings_order=imdb,tmdb,rt,rta,mc,trakt,lb,mal<br>
+                          ?badge_style=h|v|d<br>
+                          ?label_style=t|i|o<br>
+                          ?badge_size=xs|s|m|l|xl<br>
+                          ?badge_direction=d|h|v (poster only)<br>
+                          ?position=bc|tc|l|r|tl|tr|bl|br (poster only)<br>
+                          ?poster_source=t|f (poster only)<br>
+                          ?fanart_textless=true|false (poster only)
+                        </p>
+                        <p>RPDB-compatible: use your instance base (e.g. <code class="text-gray-400">http://localhost:3000</code>) as a drop-in for
+                          <code class="text-gray-400">https://api.ratingposterdb.com</code>.</p>
+                      </div>
+                    </details>
                   </div>
                 </div>
 
@@ -352,6 +387,7 @@ import VInput from "./components/VInput.vue";
 const DEFAULT_RPDB_API_URL = 'https://api.ratingposterdb.com';
 const DEFAULT_OPENPOSTERDB_API_URL = 'https://openposterdb.com';
 const DEFAULT_OPENPOSTERDB_API_KEY = 't0-free-rpdb';
+const OPENPOSTERDB_README_URL = 'https://github.com/PNRxA/openposterdb';
 
 const regions = {
   'United States': [
@@ -927,9 +963,11 @@ function normalizeOpenPosterSuffixes(value) {
     return '';
   }
 
-  return suffixes.startsWith('@') || suffixes.startsWith('.')
-    ? suffixes
-    : `.${suffixes}`;
+  if (suffixes.startsWith('@') || suffixes.startsWith('.') || suffixes.startsWith('?')) {
+    return suffixes;
+  }
+
+  return `.${suffixes}`;
 }
 
 function normalizeOpenPosterDbUrl(value) {
